@@ -165,9 +165,9 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       {mode !== "reset" ? <Input placeholder="Senha" type="password" {...register("password" as never)} /> : null}
 
       <div className="space-y-2">
-        {mode === "login" ? <Button className="w-full" disabled={isLoading || isSubmitting}>Entrar</Button> : null}
-        {mode === "register" ? <Button className="w-full" disabled={isLoading || isSubmitting}>Cadastrar</Button> : null}
-        {mode === "reset" ? <Button className="w-full" disabled={isLoading || isSubmitting}>Enviar link</Button> : null}
+        {mode === "login" ? <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>Entrar</Button> : null}
+        {mode === "register" ? <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>Cadastrar</Button> : null}
+        {mode === "reset" ? <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>Enviar link</Button> : null}
         {submitted && message ? <p className="text-center text-sm text-emerald-600 dark:text-emerald-400">{message}</p> : null}
         {!submitted && message ? <p className="text-center text-sm text-rose-600 dark:text-rose-400">{message}</p> : null}
       </div>
