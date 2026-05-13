@@ -1,19 +1,3 @@
-import {
-  activities as fallbackActivities,
-  clients as fallbackClients,
-  currentUser,
-  deals as fallbackDeals,
-  files as fallbackFiles,
-  kpiCards as fallbackKpis,
-  leads as fallbackLeads,
-  notifications as fallbackNotifications,
-  performanceData as fallbackPerformance,
-  pipelineStages as fallbackStages,
-  revenueData as fallbackRevenue,
-  sourceData as fallbackSources,
-  tasks as fallbackTasks,
-  users as fallbackUsers
-} from "@/constants/mock-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Activity, Client, Deal, FileItem, KpiCardData, Lead, NotificationItem, PipelineStage, TaskItem, UserProfile } from "@/types/crm";
 
@@ -118,37 +102,40 @@ function buildDashboard(leads: Lead[], deals: Deal[]): CrmSnapshot["dashboard"] 
   };
 }
 
-function fallbackSnapshot(): CrmSnapshot {
+function emptyDashboard(): CrmSnapshot["dashboard"] {
   return {
-    users: fallbackUsers,
-    leads: fallbackLeads,
-    activities: fallbackActivities,
-    tasks: fallbackTasks,
-    clients: fallbackClients,
-    deals: fallbackDeals,
-    stages: fallbackStages,
-    notifications: fallbackNotifications,
-    files: fallbackFiles,
-    dashboard: {
-      kpis: fallbackKpis,
-      revenueData: fallbackRevenue,
-      sourceData: fallbackSources,
-      funnelData: [
-        { name: "Novo", value: 128 },
-        { name: "Contato", value: 104 },
-        { name: "Qualificação", value: 74 },
-        { name: "Proposta", value: 42 },
-        { name: "Negociação", value: 19 },
-        { name: "Fechado", value: 34 }
-      ],
-      performanceData: fallbackPerformance
-    }
+    kpis: [
+      { title: "Leads ativos", value: "0", change: "0%", trend: [0, 0, 0, 0, 0, 0], icon: "Target" },
+      { title: "Receita do mês", value: "R$ 0", change: "0%", trend: [0, 0, 0, 0, 0, 0], icon: "DollarSign" },
+      { title: "Conversão", value: "0.0%", change: "0 p.p.", trend: [0, 0, 0, 0, 0, 0], icon: "TrendingUp" },
+      { title: "Vendas fechadas", value: "0", change: "0%", trend: [0, 0, 0, 0, 0, 0], icon: "BadgeCheck" },
+      { title: "Ticket médio", value: "R$ 0", change: "0%", trend: [0, 0, 0, 0, 0, 0], icon: "ReceiptText" }
+    ],
+    revenueData: [],
+    sourceData: [],
+    funnelData: [],
+    performanceData: []
+  };
+}
+
+function emptySnapshot(): CrmSnapshot {
+  return {
+    users: [],
+    leads: [],
+    activities: [],
+    tasks: [],
+    clients: [],
+    deals: [],
+    stages: [],
+    notifications: [],
+    files: [],
+    dashboard: emptyDashboard()
   };
 }
 
 export async function getCrmSnapshot(organizationId?: string): Promise<CrmSnapshot> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || !organizationId) {
-    return fallbackSnapshot();
+    return emptySnapshot();
   }
 
   const supabase = await createSupabaseServerClient();
@@ -186,7 +173,7 @@ export async function getCrmSnapshot(organizationId?: string): Promise<CrmSnapsh
     notificationsResult.error ||
     filesResult.error
   ) {
-    return fallbackSnapshot();
+    return emptySnapshot();
   }
 
   const users = (usersResult.data ?? []) as UserProfile[];
@@ -256,5 +243,5 @@ export async function getCrmSnapshot(organizationId?: string): Promise<CrmSnapsh
 }
 
 export function getFallbackCurrentUser(): UserProfile {
-  return currentUser;
+  throw new Error("Fallback user is disabled. Authenticate against Supabase instead.");
 }

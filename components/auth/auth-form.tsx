@@ -33,6 +33,7 @@ type AuthFormValues = {
 export function AuthForm({ mode }: { mode: AuthMode }) {
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -40,82 +41,133 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
   const {
     register,
-    handleSubmit,
-    formState: { errors, isSubmitting }
+    handleSubmit: rhfHandleSubmit,
+    formState: { errors, isSubmitting },
+    watch
   } = useForm<AuthFormValues>({
-    resolver: zodResolver(schema)
+    resolver: zodResolver(schema),
+    mode: "onChange"
   });
 
-  const onSubmit = handleSubmit(async (values) => {
+  const formValues = watch();
+
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // eslint-disable-next-line no-console
+    console.log("Form submission started:", { mode, formValues });
+    
     setMessage(null);
-    const supabase = createSupabaseBrowserClient();
-    const nextPath = searchParams.get("next") || "/";
+    setIsLoading(true);
+    
+    try {
+      // Manual validation
+      const result = await schema.parseAsync(formValues);
+      // eslint-disable-next-line no-console
+      console.log("Validation passed:", result);
 
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      setMessage("Configure as variáveis do Supabase para autenticação em produção.");
-      return;
-    }
+      const supabase = createSupabaseBrowserClient();
+      const nextPath = searchParams.get("next") || "/";
 
-    if (mode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password ?? ""
-      });
+      // eslint-disable-next-line no-console
+      console.log("Env NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20));
 
-      if (error) {
-        setMessage(error.message);
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        setMessage("Configure as variáveis do Supabase para autenticação em produção.");
+        setIsLoading(false);
         return;
       }
 
-      router.push(nextPath);
-      router.refresh();
-      return;
-    }
+      if (mode === "login") {
+        // eslint-disable-next-line no-console
+        console.log("Attempting login...");
+        const { error } = await supabase.auth.signInWithPassword({
+          email: result.email,
+          password: (result as any).password ?? ""
+        });
 
-    if (mode === "register") {
-      const { error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password ?? "",
-        options: {
-          data: {
-            name: values.name ?? ""
-          }
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error("Login error:", error);
+          setMessage(error.message);
+          setIsLoading(false);
+          return;
         }
-      });
 
-      if (error) {
-        setMessage(error.message);
+        router.push(nextPath);
+        router.refresh();
         return;
       }
 
+      if (mode === "register") {
+        // eslint-disable-next-line no-console
+        console.log("Attempting signup with:", result.email);
+        const { data, error } = await supabase.auth.signUp({
+          email: result.email,
+          password: (result as any).password ?? "",
+          options: {
+            data: {
+              name: (result as any).name ?? ""
+            }
+          }
+        });
+
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error("Signup error:", error);
+          setMessage(error.message);
+          setIsLoading(false);
+          return;
+        }
+
+        // eslint-disable-next-line no-console
+        console.log("Signup successful!", data);
+        setSubmitted(true);
+        setMessage("Conta criada. Verifique seu e-mail para confirmar o cadastro.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Reset password mode
+      // eslint-disable-next-line no-console
+      console.log("Attempting reset password...");
+      const { error } = await supabase.auth.resetPasswordForEmail(result.email, {
+        redirectTo: `${window.location.origin}/login`
+      });
+
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("Reset password error:", error);
+        setMessage(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // eslint-disable-next-line no-console
+      console.log("Reset password email sent!");
       setSubmitted(true);
-      setMessage("Conta criada. Verifique seu e-mail para confirmar o cadastro.");
-      return;
+      setMessage("Link de recuperação enviado para o seu e-mail.");
+      setIsLoading(false);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Form submission error:", err);
+      const errorMessage = (err instanceof z.ZodError) 
+        ? err.errors.map(e => e.message).join(", ")
+        : String((err as any)?.message ?? err);
+      setMessage(errorMessage);
+      setIsLoading(false);
     }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-      redirectTo: `${window.location.origin}/login`
-    });
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    setSubmitted(true);
-    setMessage("Link de recuperação enviado para o seu e-mail.");
-  });
+  };
 
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
+    <form className="space-y-4" onSubmit={handleFormSubmit}>
       {mode === "register" ? <Input placeholder="Nome completo" {...register("name" as never)} /> : null}
       <Input placeholder="E-mail" type="email" {...register("email" as never)} />
       {mode !== "reset" ? <Input placeholder="Senha" type="password" {...register("password" as never)} /> : null}
 
       <div className="space-y-2">
-        {mode === "login" ? <Button className="w-full">Entrar</Button> : null}
-        {mode === "register" ? <Button className="w-full">Cadastrar</Button> : null}
-        {mode === "reset" ? <Button className="w-full">Enviar link</Button> : null}
+        {mode === "login" ? <Button className="w-full" disabled={isLoading || isSubmitting}>Entrar</Button> : null}
+        {mode === "register" ? <Button className="w-full" disabled={isLoading || isSubmitting}>Cadastrar</Button> : null}
+        {mode === "reset" ? <Button className="w-full" disabled={isLoading || isSubmitting}>Enviar link</Button> : null}
         {submitted && message ? <p className="text-center text-sm text-emerald-600 dark:text-emerald-400">{message}</p> : null}
         {!submitted && message ? <p className="text-center text-sm text-rose-600 dark:text-rose-400">{message}</p> : null}
       </div>

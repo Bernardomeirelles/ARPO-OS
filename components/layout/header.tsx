@@ -2,6 +2,7 @@
 
 import { Bell, Menu, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { QuickLead } from "@/components/leads/quick-lead";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -22,6 +23,9 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
             <Bell className="h-4 w-4" />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />
           </Button>
+          <div className="hidden md:block">
+            <QuickLead />
+          </div>
           <ThemeToggle />
           <div className="hidden items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex">
             <Avatar>

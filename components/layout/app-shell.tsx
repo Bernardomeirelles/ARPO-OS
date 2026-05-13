@@ -5,6 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import dynamic from "next/dynamic";
+
+const LeadsListener = dynamic(() => import("@/components/realtime/leads-listener").then((m) => m.LeadsListener), { ssr: false });
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -18,6 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="flex min-h-screen flex-col">
           <Header onMenuClick={() => setMobileOpen(true)} />
+          <LeadsListener />
           <main className="flex-1 px-4 py-5 lg:px-6 lg:py-6">
             <div className="mb-4">
               <Breadcrumbs />
