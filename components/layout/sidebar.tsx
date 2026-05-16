@@ -13,13 +13,13 @@ export function Sidebar({ className, onNavigate }: { className?: string; onNavig
 
   return (
     <aside className={cn("flex h-full flex-col gap-6 border-r border-slate-200 bg-white/85 px-4 py-5 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80", className)}>
-      <div className="flex items-center gap-3 px-2">
+      <Link href="/" onClick={onNavigate} className="flex items-center gap-3 px-2 transition-opacity hover:opacity-80">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-white shadow-glow">A</div>
         <div>
           <p className="text-sm font-semibold tracking-tight text-slate-950 dark:text-white">ARPO CRM</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Premium Sales OS</p>
         </div>
-      </div>
+      </Link>
 
       <Separator />
 

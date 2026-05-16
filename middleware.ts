@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-const publicRoutes = ["/login", "/cadastro", "/recuperar-senha"];
+const publicRoutes = ["/login", "/cadastro", "/recuperar-senha", "/auth/callback"];
 const roleRules: Array<{ prefix: string; roles: string[] }> = [
   { prefix: "/configuracoes", roles: ["admin"] },
   { prefix: "/relatorios", roles: ["admin", "gestor"] }

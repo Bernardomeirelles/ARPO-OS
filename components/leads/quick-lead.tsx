@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -22,7 +23,7 @@ export function QuickLead() {
       // fetch profile to get organization_id
       const { data: profile } = await supabase.from("user_profiles").select("organization_id").eq("id", user.id).single();
       const orgId = profile?.organization_id;
-      if (!orgId) throw new Error("Organização não encontrada");
+      if (!orgId) throw new Error("Organização não encontrada. Acesse 'Minha Conta' e salve seu perfil para continuar.");
 
       const lead = {
         organization_id: orgId,
@@ -60,9 +61,9 @@ export function QuickLead() {
   return (
     <div>
       <Button onClick={() => setOpen(true)} size="sm">Novo lead</Button>
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-[420px] rounded bg-white p-6">
+      {open ? createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/40 p-4">
+          <div className="my-auto w-full max-w-[420px] rounded bg-white p-6 text-slate-950 dark:bg-slate-900 dark:text-white">
             <h3 className="mb-3 text-lg font-medium">Criar lead rápido</h3>
             <div className="space-y-2">
               <Input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} />
@@ -74,7 +75,8 @@ export function QuickLead() {
               <Button onClick={create} disabled={loading}>{loading ? 'Criando...' : 'Criar'}</Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </div>
   );

@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { ProfileModal } from "./profile-modal";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -18,9 +16,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!mounted) return;
 
-      // If no session and not on auth routes, redirect to /login
+      const authRoutes = ["/login", "/cadastro", "/recuperar-senha", "/auth/callback"];
+      const isAuthRoute = authRoutes.some((r) => pathname?.startsWith(r));
+
+      // Not logged in
       if (!session) {
-        if (!pathname?.startsWith("/login") && !pathname?.startsWith("/cadastro") && !pathname?.startsWith("/recuperar-senha")) {
+        if (!isAuthRoute) {
           router.push("/login");
           return;
         }
@@ -28,20 +29,27 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // check user_profiles existence
-      const { data: user } = await supabase.auth.getUser();
-      if (!user?.user) {
-        setReady(true);
-        return;
+      // Logged in — check if profile exists
+      if (!isAuthRoute && pathname !== "/minha-conta") {
+        const { data: user } = await supabase.auth.getUser();
+        if (user?.user) {
+          const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("id")
+            .eq("id", user.user.id)
+            .maybeSingle();
+
+          if (!mounted) return;
+
+          // No profile yet → send to account setup page
+          if (!profile) {
+            router.push("/minha-conta");
+            return;
+          }
+        }
       }
 
-      const uid = user.user.id;
-      const { data: profile } = await supabase.from("user_profiles").select("id").eq("id", uid).maybeSingle();
-      if (!profile) {
-        setShowProfile(true);
-      }
-
-      setReady(true);
+      if (mounted) setReady(true);
     }
 
     void check();
@@ -52,10 +60,5 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!ready) return null;
 
-  return (
-    <>
-      {children}
-      <ProfileModal open={showProfile} onClose={() => setShowProfile(false)} />
-    </>
-  );
+  return <>{children}</>;
 }
